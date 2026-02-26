@@ -38,12 +38,11 @@ public static partial class SecurityUtils
 
     /// <summary>
     /// Builds the canonical signing string for an HTTP request.
-    /// Format: METHOD\nPATH\nTIMESTAMP\nBODY_HASH
+    /// Format: {timestamp}.{body}
     /// </summary>
-    public static string BuildSigningString(string method, string path, long timestamp, string body)
+    public static string BuildSigningString(long timestamp, string body)
     {
-        var bodyHash = ComputeSha256(body);
-        return $"{method.ToUpperInvariant()}\n{path}\n{timestamp}\n{bodyHash}";
+        return $"{timestamp}.{body}";
     }
 
     /// <summary>
