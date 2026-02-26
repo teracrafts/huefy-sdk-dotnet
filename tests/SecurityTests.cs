@@ -79,18 +79,17 @@ public class SecurityTests
     [Fact]
     public void BuildSigningString_ShouldFormatCorrectly()
     {
-        var result = SecurityUtils.BuildSigningString("POST", "/api/v1/test", 1700000000000, "{\"key\":\"value\"}");
+        var result = SecurityUtils.BuildSigningString(1700000000000, "{\"key\":\"value\"}");
 
-        Assert.StartsWith("POST\n/api/v1/test\n1700000000000\n", result);
-        Assert.Contains("\n", result);
+        Assert.Equal("1700000000000.{\"key\":\"value\"}", result);
     }
 
     [Fact]
-    public void BuildSigningString_ShouldUppercaseMethod()
+    public void BuildSigningString_ShouldHandleEmptyBody()
     {
-        var result = SecurityUtils.BuildSigningString("get", "/path", 0, "");
+        var result = SecurityUtils.BuildSigningString(0, "");
 
-        Assert.StartsWith("GET\n", result);
+        Assert.Equal("0.", result);
     }
 
     // --- PII Detection Tests ---
