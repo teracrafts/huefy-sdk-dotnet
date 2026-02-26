@@ -7,6 +7,9 @@ using Huefy.Sdk.Errors;
 /// </summary>
 public sealed class RetryHandler
 {
+    /// <summary>Maximum exponent value to prevent overflow in backoff calculation.</summary>
+    private const int MaxAttemptForExponent = 30;
+
     private readonly int _maxRetries;
     private readonly int _initialDelayMs;
     private readonly int _maxDelayMs;
@@ -66,7 +69,8 @@ public sealed class RetryHandler
         if (retryAfter.HasValue && retryAfter.Value > 0)
             return (int)Math.Min(retryAfter.Value, _maxDelayMs);
 
-        var exponentialDelay = _initialDelayMs * Math.Pow(_backoffMultiplier, attempt);
+        var clampedAttempt = Math.Min(attempt, MaxAttemptForExponent);
+        var exponentialDelay = _initialDelayMs * Math.Pow(_backoffMultiplier, clampedAttempt);
         var jitter = Random.Shared.Next(0, _jitterMs);
         var totalDelay = (int)Math.Min(exponentialDelay + jitter, _maxDelayMs);
 
