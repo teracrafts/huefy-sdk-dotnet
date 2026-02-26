@@ -139,6 +139,7 @@ public sealed class CircuitBreaker
             _state = CircuitState.Closed;
             _failureCount = 0;
             _halfOpenSuccessCount = 0;
+            _lastFailureTime = DateTimeOffset.MinValue;
         }
     }
 
