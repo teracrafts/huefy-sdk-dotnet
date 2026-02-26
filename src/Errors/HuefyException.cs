@@ -63,6 +63,14 @@ public class HuefyException : Exception
         new(message, ErrorCode.AuthenticationFailed, statusCode: statusCode, recoverable: false);
 
     /// <summary>
+    /// Creates a recoverable key rotation error exception.
+    /// Thrown after the active key has been rotated so the retry handler will
+    /// automatically retry the request with the new key.
+    /// </summary>
+    public static HuefyException KeyRotationError(string message, int? statusCode = 401) =>
+        new(message, ErrorCode.KeyRotationFailed, statusCode: statusCode, recoverable: true);
+
+    /// <summary>
     /// Creates a rate-limited error exception.
     /// </summary>
     public static HuefyException RateLimited(string message, long? retryAfter = null) =>
@@ -100,6 +108,7 @@ public class HuefyException : Exception
             400 => (ErrorCode.ValidationError, false),
             401 => (ErrorCode.AuthenticationFailed, false),
             403 => (ErrorCode.InsufficientPermissions, false),
+            408 => (ErrorCode.Timeout, true),
             429 => (ErrorCode.RateLimited, true),
             >= 500 and < 600 => (ErrorCode.ServerError, true),
             _ => (ErrorCode.Unknown, false)
