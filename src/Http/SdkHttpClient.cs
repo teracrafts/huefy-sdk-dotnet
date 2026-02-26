@@ -18,6 +18,7 @@ internal sealed class SdkHttpClient : IDisposable
     private readonly HuefyConfig _config;
     private readonly bool _enableSigning;
     private readonly bool _enableSanitization;
+    private readonly object _keyLock = new();
     private string _activeApiKey;
     private bool _usingSecondaryKey;
     private bool _disposed;
@@ -101,11 +102,18 @@ internal sealed class SdkHttpClient : IDisposable
                 }
 
                 // Attempt key rotation on 401 if secondary key is available
-                if ((int)response.StatusCode == 401 && !_usingSecondaryKey && _config.SecondaryApiKey is not null)
+                if ((int)response.StatusCode == 401 && _config.SecondaryApiKey is not null)
                 {
-                    _activeApiKey = _config.SecondaryApiKey;
-                    _usingSecondaryKey = true;
-                    throw HuefyException.AuthenticationError(
+                    lock (_keyLock)
+                    {
+                        if (!_usingSecondaryKey)
+                        {
+                            _activeApiKey = _config.SecondaryApiKey;
+                            _usingSecondaryKey = true;
+                        }
+                    }
+
+                    throw HuefyException.KeyRotationError(
                         "Primary key failed, rotating to secondary key");
                 }
 
@@ -113,9 +121,16 @@ internal sealed class SdkHttpClient : IDisposable
                     ? ids.FirstOrDefault()
                     : null;
 
-                long? retryAfter = response.Headers.RetryAfter?.Delta.HasValue == true
-                    ? (long)response.Headers.RetryAfter.Delta.Value.TotalMilliseconds
-                    : null;
+                long? retryAfter = null;
+                if (response.Headers.RetryAfter?.Delta.HasValue == true)
+                {
+                    retryAfter = (long)response.Headers.RetryAfter.Delta.Value.TotalMilliseconds;
+                }
+                else if (response.Headers.RetryAfter?.Date.HasValue == true)
+                {
+                    var diff = response.Headers.RetryAfter.Date.Value - DateTimeOffset.UtcNow;
+                    retryAfter = diff.TotalMilliseconds > 0 ? (long)diff.TotalMilliseconds : null;
+                }
 
                 throw HuefyException.FromResponse(
                     (int)response.StatusCode,
@@ -128,8 +143,14 @@ internal sealed class SdkHttpClient : IDisposable
 
     private HttpRequestMessage BuildRequest(HttpMethod method, string path, object? content)
     {
+        string currentKey;
+        lock (_keyLock)
+        {
+            currentKey = _activeApiKey;
+        }
+
         var request = new HttpRequestMessage(method, path);
-        request.Headers.Add("X-API-Key", _activeApiKey);
+        request.Headers.Add("X-API-Key", currentKey);
 
         string bodyJson = string.Empty;
 
@@ -142,9 +163,8 @@ internal sealed class SdkHttpClient : IDisposable
         if (_enableSigning)
         {
             var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var signingString = SecurityUtils.BuildSigningString(
-                method.Method, path, timestamp, bodyJson);
-            var signature = SecurityUtils.ComputeHmacSha256(signingString, _activeApiKey);
+            var signingString = SecurityUtils.BuildSigningString(timestamp, bodyJson);
+            var signature = SecurityUtils.ComputeHmacSha256(signingString, currentKey);
 
             request.Headers.Add("X-Timestamp", timestamp.ToString());
             request.Headers.Add("X-Signature", signature);
