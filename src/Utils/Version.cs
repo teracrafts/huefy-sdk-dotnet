@@ -13,5 +13,5 @@ public static class SdkVersion
     /// <summary>
     /// The SDK user-agent header value.
     /// </summary>
-    public static string UserAgent => $"huefy-dotnet-sdk/{Current}";
+    public static string UserAgent => $"huefy-dotnet/{Current}";
 }
