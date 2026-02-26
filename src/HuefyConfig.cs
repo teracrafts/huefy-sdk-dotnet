@@ -1,3 +1,5 @@
+using Huefy.Utils;
+
 namespace Huefy.Sdk;
 
 /// <summary>
@@ -30,10 +32,10 @@ public record CircuitBreakerConfig
     public int FailureThreshold { get; init; } = 5;
 
     /// <summary>Duration in milliseconds the circuit stays open before transitioning to half-open.</summary>
-    public int ResetTimeoutMs { get; init; } = 60_000;
+    public int ResetTimeoutMs { get; init; } = 30_000;
 
     /// <summary>Number of successful requests in half-open state before closing.</summary>
-    public int HalfOpenMaxAttempts { get; init; } = 3;
+    public int HalfOpenMaxAttempts { get; init; } = 1;
 }
 
 /// <summary>
@@ -65,12 +67,15 @@ public record HuefyConfig
     /// <summary>Enable sanitization of sensitive data in error messages.</summary>
     public bool EnableErrorSanitization { get; init; } = true;
 
+    /// <summary>Logger instance for SDK diagnostic output. Defaults to null (no logging).</summary>
+    public IHuefyLogger? Logger { get; init; }
+
     private static string ResolveBaseUrl()
     {
         var mode = Environment.GetEnvironmentVariable("HUEFY_MODE");
         return mode?.ToLowerInvariant() switch
         {
-            "development" or "dev" => "https://api.huefy.on/api/v1/sdk",
+            "local" => "https://api.huefy.on/api/v1/sdk",
             _ => "https://api.huefy.dev/api/v1/sdk"
         };
     }
