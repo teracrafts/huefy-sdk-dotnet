@@ -12,6 +12,10 @@ namespace Huefy.Sdk.Http;
 /// </summary>
 internal sealed class SdkHttpClient : IDisposable
 {
+    private static readonly HttpClient _sharedHttpClient = new HttpClient(
+        new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) }
+    );
+
     private readonly HttpClient _httpClient;
     private readonly RetryHandler _retryHandler;
     private readonly CircuitBreaker _circuitBreaker;
@@ -31,12 +35,10 @@ internal sealed class SdkHttpClient : IDisposable
         _enableSigning = config.EnableRequestSigning;
         _enableSanitization = config.EnableErrorSanitization;
 
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri(config.BaseUrl),
-            Timeout = TimeSpan.FromMilliseconds(config.Timeout)
-        };
-        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(SdkVersion.UserAgent);
+        _httpClient = _sharedHttpClient;
+        _httpClient.BaseAddress ??= new Uri(config.BaseUrl);
+        _httpClient.Timeout = TimeSpan.FromMilliseconds(config.Timeout);
+        _httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd(SdkVersion.UserAgent);
 
         _retryHandler = new RetryHandler(config.RetryConfig);
         _circuitBreaker = new CircuitBreaker(config.CircuitBreakerConfig);
@@ -185,10 +187,7 @@ internal sealed class SdkHttpClient : IDisposable
 
     public void Dispose()
     {
-        if (!_disposed)
-        {
-            _httpClient.Dispose();
-            _disposed = true;
-        }
+        // _httpClient is the shared static instance; do not dispose it.
+        _disposed = true;
     }
 }
