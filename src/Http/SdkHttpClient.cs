@@ -15,6 +15,8 @@ internal sealed class SdkHttpClient : IDisposable
     private static readonly HttpClient _sharedHttpClient = new HttpClient(
         new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) }
     );
+    private static bool _httpClientConfigured = false;
+    private static readonly object _configLock = new();
 
     private readonly HttpClient _httpClient;
     private readonly RetryHandler _retryHandler;
@@ -36,9 +38,16 @@ internal sealed class SdkHttpClient : IDisposable
         _enableSanitization = config.EnableErrorSanitization;
 
         _httpClient = _sharedHttpClient;
-        _httpClient.BaseAddress ??= new Uri(config.BaseUrl);
-        _httpClient.Timeout = TimeSpan.FromMilliseconds(config.Timeout);
-        _httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd(SdkVersion.UserAgent);
+        lock (_configLock)
+        {
+            if (!_httpClientConfigured)
+            {
+                _sharedHttpClient.BaseAddress = new Uri(config.BaseUrl);
+                _sharedHttpClient.Timeout = TimeSpan.FromMilliseconds(config.Timeout);
+                _sharedHttpClient.DefaultRequestHeaders.UserAgent.TryParseAdd(SdkVersion.UserAgent);
+                _httpClientConfigured = true;
+            }
+        }
 
         _retryHandler = new RetryHandler(config.RetryConfig);
         _circuitBreaker = new CircuitBreaker(config.CircuitBreakerConfig);
