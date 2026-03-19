@@ -108,6 +108,7 @@ internal sealed class SdkHttpClient : IDisposable
 
                 if (response.IsSuccessStatusCode)
                 {
+                    ParseRateLimitHeaders(response);
                     return JsonSerializer.Deserialize<T>(body, JsonOptions)
                         ?? throw HuefyException.NetworkError("Failed to deserialize response");
                 }
@@ -182,6 +183,30 @@ internal sealed class SdkHttpClient : IDisposable
         }
 
         return request;
+    }
+
+    private void ParseRateLimitHeaders(HttpResponseMessage response)
+    {
+        if (!response.Headers.TryGetValues("X-RateLimit-Limit", out var limitValues)) return;
+        if (!response.Headers.TryGetValues("X-RateLimit-Remaining", out var remainingValues)) return;
+        if (!response.Headers.TryGetValues("X-RateLimit-Reset", out var resetValues)) return;
+
+        if (!int.TryParse(limitValues.FirstOrDefault(), out var limit)) return;
+        if (!int.TryParse(remainingValues.FirstOrDefault(), out var remaining)) return;
+        if (!long.TryParse(resetValues.FirstOrDefault(), out var resetUnix)) return;
+
+        var info = new RateLimitInfo(
+            Limit: limit,
+            Remaining: remaining,
+            ResetAt: DateTimeOffset.FromUnixTimeSeconds(resetUnix)
+        );
+
+        _config.OnRateLimitUpdate?.Invoke(info);
+
+        if (limit > 0 && remaining < (int)(limit * 0.2))
+        {
+            _config.OnRateLimitWarning?.Invoke(info);
+        }
     }
 
     private string MaybeSanitize(string input) =>
