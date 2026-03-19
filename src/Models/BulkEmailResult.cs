@@ -3,39 +3,104 @@ using System.Text.Json.Serialization;
 namespace Huefy.Sdk.Models;
 
 /// <summary>
-/// Error details for a single email in a bulk operation.
+/// A single recipient in a bulk email send.
 /// </summary>
-public record BulkEmailError
+public record BulkRecipient
 {
-    /// <summary>Error message describing what went wrong.</summary>
-    [JsonPropertyName("message")]
-    public required string Message { get; init; }
-
-    /// <summary>Error code string.</summary>
-    [JsonPropertyName("code")]
-    public required string Code { get; init; }
-}
-
-/// <summary>
-/// Result of sending a single email in a bulk operation.
-/// </summary>
-public record BulkEmailResult
-{
-    /// <summary>The recipient email address.</summary>
     [JsonPropertyName("email")]
     public required string Email { get; init; }
 
-    /// <summary>Whether this individual email was sent successfully.</summary>
+    [JsonPropertyName("type")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Type { get; init; }
+
+    [JsonPropertyName("data")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, string>? Data { get; init; }
+}
+
+/// <summary>
+/// Request body for sending bulk emails.
+/// </summary>
+public record SendBulkEmailsRequest
+{
+    [JsonPropertyName("templateKey")]
+    public required string TemplateKey { get; init; }
+
+    [JsonPropertyName("recipients")]
+    public required List<BulkRecipient> Recipients { get; init; }
+
+    [JsonPropertyName("fromEmail")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? FromEmail { get; init; }
+
+    [JsonPropertyName("fromName")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? FromName { get; init; }
+
+    [JsonPropertyName("providerType")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ProviderType { get; init; }
+
+    [JsonPropertyName("batchSize")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int? BatchSize { get; init; }
+
+    [JsonPropertyName("correlationId")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? CorrelationId { get; init; }
+}
+
+/// <summary>
+/// Data payload from the send-bulk response.
+/// </summary>
+public record SendBulkEmailsResponseData
+{
+    [JsonPropertyName("batchId")]
+    public string BatchId { get; init; } = string.Empty;
+
+    [JsonPropertyName("status")]
+    public string Status { get; init; } = string.Empty;
+
+    [JsonPropertyName("templateKey")]
+    public string TemplateKey { get; init; } = string.Empty;
+
+    [JsonPropertyName("totalRecipients")]
+    public int TotalRecipients { get; init; }
+
+    [JsonPropertyName("processedCount")]
+    public int ProcessedCount { get; init; }
+
+    [JsonPropertyName("successCount")]
+    public int SuccessCount { get; init; }
+
+    [JsonPropertyName("failureCount")]
+    public int FailureCount { get; init; }
+
+    [JsonPropertyName("suppressedCount")]
+    public int SuppressedCount { get; init; }
+
+    [JsonPropertyName("startedAt")]
+    public string StartedAt { get; init; } = string.Empty;
+
+    [JsonPropertyName("completedAt")]
+    public string? CompletedAt { get; init; }
+
+    [JsonPropertyName("recipients")]
+    public List<RecipientStatus> Recipients { get; init; } = [];
+}
+
+/// <summary>
+/// Response from the send-bulk endpoint.
+/// </summary>
+public record SendBulkEmailsResponse
+{
     [JsonPropertyName("success")]
     public bool Success { get; init; }
 
-    /// <summary>The response if the email was sent successfully.</summary>
-    [JsonPropertyName("result")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public SendEmailResponse? Result { get; init; }
+    [JsonPropertyName("data")]
+    public SendBulkEmailsResponseData Data { get; init; } = new();
 
-    /// <summary>The error if the email failed to send.</summary>
-    [JsonPropertyName("error")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public BulkEmailError? Error { get; init; }
+    [JsonPropertyName("correlationId")]
+    public string CorrelationId { get; init; } = string.Empty;
 }
