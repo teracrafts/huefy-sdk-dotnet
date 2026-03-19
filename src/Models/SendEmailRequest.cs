@@ -8,7 +8,7 @@ namespace Huefy.Sdk.Models;
 public record SendEmailRequest
 {
     /// <summary>The template key identifying the email template (1-100 characters).</summary>
-    [JsonPropertyName("template_key")]
+    [JsonPropertyName("templateKey")]
     public required string TemplateKey { get; init; }
 
     /// <summary>The recipient email address.</summary>
@@ -20,7 +20,7 @@ public record SendEmailRequest
     public required Dictionary<string, string> Data { get; init; }
 
     /// <summary>The email provider to use. Defaults to SES if not specified.</summary>
-    [JsonPropertyName("provider_type")]
+    [JsonPropertyName("providerType")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public EmailProvider? ProviderType { get; init; }
 }
