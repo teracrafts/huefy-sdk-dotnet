@@ -3,6 +3,11 @@ using Huefy.Utils;
 namespace Huefy.Sdk;
 
 /// <summary>
+/// Parsed rate-limit header values from an API response.
+/// </summary>
+public record RateLimitInfo(int Limit, int Remaining, DateTimeOffset ResetAt);
+
+/// <summary>
 /// Configuration for retry behavior.
 /// </summary>
 public record RetryConfig
@@ -69,6 +74,12 @@ public record HuefyConfig
 
     /// <summary>Logger instance for SDK diagnostic output. Defaults to null (no logging).</summary>
     public IHuefyLogger? Logger { get; init; }
+
+    /// <summary>Optional callback invoked with rate-limit info after every successful response.</summary>
+    public Action<RateLimitInfo>? OnRateLimitUpdate { get; init; }
+
+    /// <summary>Optional callback invoked when remaining requests drop below 20% of the limit.</summary>
+    public Action<RateLimitInfo>? OnRateLimitWarning { get; init; }
 
     private static string ResolveBaseUrl()
     {
