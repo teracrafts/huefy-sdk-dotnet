@@ -1,21 +1,7 @@
 using Huefy.Sdk.Http;
+using Huefy.Sdk.Models;
 
 namespace Huefy.Sdk;
-
-/// <summary>
-/// Response from the health check endpoint.
-/// </summary>
-public record HealthResponse
-{
-    /// <summary>Service health status (e.g., "ok", "degraded").</summary>
-    public string Status { get; init; } = string.Empty;
-
-    /// <summary>Service version string.</summary>
-    public string Version { get; init; } = string.Empty;
-
-    /// <summary>Timestamp of the health check response.</summary>
-    public long Timestamp { get; init; }
-}
 
 /// <summary>
 /// Main client for the Huefy SDK.
@@ -39,10 +25,10 @@ public sealed class HuefyClient : IDisposable
     /// </summary>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Health check response with status and version.</returns>
-    public async Task<HealthResponse> HealthCheckAsync(CancellationToken ct = default)
+    public async Task<EmailHealthResponse> HealthCheckAsync(CancellationToken ct = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        return await _httpClient.GetAsync<HealthResponse>("/api/v1/health", ct).ConfigureAwait(false);
+        return await _httpClient.GetAsync<EmailHealthResponse>("/api/v1/health", ct).ConfigureAwait(false);
     }
 
     /// <summary>
