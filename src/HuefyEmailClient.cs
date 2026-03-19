@@ -24,7 +24,7 @@ namespace Huefy.Sdk;
 public sealed class HuefyEmailClient : IDisposable
 {
     private const string EmailsSendPath = "/emails/send";
-    private const string EmailsBulkPath = "/emails/bulk";
+    private const string EmailsBulkPath = "/emails/send-bulk";
 
     private readonly SdkHttpClient _httpClient;
     private bool _disposed;
@@ -104,64 +104,50 @@ public sealed class HuefyEmailClient : IDisposable
     }
 
     /// <summary>
-    /// Sends multiple emails in bulk.
+    /// Sends multiple emails in bulk using a shared template.
     /// </summary>
-    /// <remarks>
-    /// Each request is sent independently. Failures for individual emails
-    /// do not prevent remaining emails from being sent.
-    /// </remarks>
-    /// <param name="requests">The list of email requests to send.</param>
+    /// <param name="templateKey">The template key to use for all recipients.</param>
+    /// <param name="recipients">The list of bulk recipients.</param>
+    /// <param name="fromEmail">Optional sender email address.</param>
+    /// <param name="fromName">Optional sender name.</param>
+    /// <param name="providerType">Optional email provider type.</param>
+    /// <param name="batchSize">Optional batch size.</param>
+    /// <param name="correlationId">Optional correlation ID.</param>
     /// <param name="ct">Cancellation token.</param>
-    /// <returns>A list of results for each email.</returns>
-    public async Task<List<BulkEmailResult>> SendBulkEmailsAsync(
-        List<SendEmailRequest> requests,
+    /// <returns>The bulk send response.</returns>
+    public async Task<SendBulkEmailsResponse> SendBulkEmailsAsync(
+        string templateKey,
+        List<BulkRecipient> recipients,
+        string? fromEmail = null,
+        string? fromName = null,
+        string? providerType = null,
+        int? batchSize = null,
+        string? correlationId = null,
         CancellationToken ct = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        ArgumentNullException.ThrowIfNull(requests);
+        ArgumentNullException.ThrowIfNull(templateKey);
+        ArgumentNullException.ThrowIfNull(recipients);
 
-        var countErr = EmailValidators.ValidateBulkCount(requests.Count);
+        var countErr = EmailValidators.ValidateBulkCount(recipients.Count);
         if (countErr is not null)
         {
             throw HuefyException.ValidationError(countErr);
         }
 
-        var results = new List<BulkEmailResult>(requests.Count);
-
-        foreach (var request in requests)
+        var request = new SendBulkEmailsRequest
         {
-            try
-            {
-                var response = await SendEmailAsync(
-                    request.TemplateKey,
-                    request.Data,
-                    request.Recipient,
-                    request.ProviderType,
-                    ct).ConfigureAwait(false);
+            TemplateKey = templateKey.Trim(),
+            Recipients = recipients,
+            FromEmail = fromEmail,
+            FromName = fromName,
+            ProviderType = providerType,
+            BatchSize = batchSize,
+            CorrelationId = correlationId,
+        };
 
-                results.Add(new BulkEmailResult
-                {
-                    Email = request.Recipient,
-                    Success = true,
-                    Result = response
-                });
-            }
-            catch (HuefyException ex)
-            {
-                results.Add(new BulkEmailResult
-                {
-                    Email = request.Recipient,
-                    Success = false,
-                    Error = new BulkEmailError
-                    {
-                        Message = ex.Message,
-                        Code = ex.Code.ToString()
-                    }
-                });
-            }
-        }
-
-        return results;
+        return await _httpClient.PostAsync<SendBulkEmailsResponse>(EmailsBulkPath, request, ct)
+            .ConfigureAwait(false);
     }
 
     /// <summary>
