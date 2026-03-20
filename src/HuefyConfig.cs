@@ -16,16 +16,13 @@ public record RetryConfig
     public int MaxRetries { get; init; } = 3;
 
     /// <summary>Initial delay between retries in milliseconds.</summary>
-    public int InitialDelayMs { get; init; } = 1000;
+    public int InitialDelayMs { get; init; } = 500;
 
     /// <summary>Maximum delay between retries in milliseconds.</summary>
-    public int MaxDelayMs { get; init; } = 30_000;
+    public int MaxDelayMs { get; init; } = 10_000;
 
     /// <summary>Backoff multiplier applied after each retry.</summary>
     public double BackoffMultiplier { get; init; } = 2.0;
-
-    /// <summary>Maximum jitter in milliseconds added to retry delays.</summary>
-    public int JitterMs { get; init; } = 500;
 }
 
 /// <summary>
