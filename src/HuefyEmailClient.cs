@@ -3,6 +3,7 @@ using Huefy.Sdk.Http;
 using Huefy.Sdk.Models;
 using Huefy.Sdk.Security;
 using Huefy.Sdk.Validators;
+using Huefy.Utils;
 
 namespace Huefy.Sdk;
 
@@ -27,6 +28,7 @@ public sealed class HuefyEmailClient : IDisposable
     private const string EmailsBulkPath = "/emails/send-bulk";
 
     private readonly SdkHttpClient _httpClient;
+    private readonly IHuefyLogger _logger;
     private bool _disposed;
 
     /// <summary>
@@ -37,6 +39,7 @@ public sealed class HuefyEmailClient : IDisposable
     {
         ArgumentNullException.ThrowIfNull(config);
         _httpClient = new SdkHttpClient(config);
+        _logger = config.Logger ?? new NullLogger();
     }
 
     /// <summary>
@@ -81,13 +84,13 @@ public sealed class HuefyEmailClient : IDisposable
                 $"Validation failed: {string.Join("; ", errors)}");
         }
 
-        // Check template data values for potential PII before sending.
+        // Warn if template data values contain potential PII (advisory only — never blocks the send).
         foreach (var kvp in data)
         {
             if (SecurityUtils.ContainsPii(kvp.Value))
             {
-                throw HuefyException.ValidationError(
-                    $"Potential PII detected in template data field '{kvp.Key}'");
+                _logger.Log(HuefyLogLevel.Warning,
+                    $"Potential PII detected in template data field '{kvp.Key}'. Consider removing or encrypting sensitive fields.");
             }
         }
 
