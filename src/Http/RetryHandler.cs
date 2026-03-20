@@ -14,7 +14,6 @@ public sealed class RetryHandler
     private readonly int _initialDelayMs;
     private readonly int _maxDelayMs;
     private readonly double _backoffMultiplier;
-    private readonly int _jitterMs;
 
     public RetryHandler(RetryConfig config)
     {
@@ -22,7 +21,6 @@ public sealed class RetryHandler
         _initialDelayMs = config.InitialDelayMs;
         _maxDelayMs = config.MaxDelayMs;
         _backoffMultiplier = config.BackoffMultiplier;
-        _jitterMs = config.JitterMs;
     }
 
     /// <summary>
@@ -71,8 +69,10 @@ public sealed class RetryHandler
 
         var clampedAttempt = Math.Min(attempt, MaxAttemptForExponent);
         var exponentialDelay = _initialDelayMs * Math.Pow(_backoffMultiplier, clampedAttempt);
-        var jitter = Random.Shared.Next(0, _jitterMs);
-        var totalDelay = (int)Math.Min(exponentialDelay + jitter, _maxDelayMs);
+        var capped = Math.Min(exponentialDelay, _maxDelayMs);
+        // Multiplicative ±20% jitter: factor in [0.8, 1.2)
+        var jitterFactor = 0.8 + Random.Shared.NextDouble() * 0.4;
+        var totalDelay = (int)Math.Min(capped * jitterFactor, _maxDelayMs);
 
         return totalDelay;
     }
