@@ -138,6 +138,15 @@ public sealed class HuefyEmailClient : IDisposable
             throw HuefyException.ValidationError(countErr);
         }
 
+        for (var i = 0; i < recipients.Count; i++)
+        {
+            var emailErr = EmailValidators.ValidateEmail(recipients[i].Email);
+            if (emailErr is not null)
+            {
+                throw HuefyException.ValidationError($"recipients[{i}]: {emailErr}");
+            }
+        }
+
         var request = new SendBulkEmailsRequest
         {
             TemplateKey = templateKey.Trim(),
