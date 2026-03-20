@@ -14,7 +14,7 @@ public static partial class EmailValidators
     public const int MaxTemplateKeyLength = 100;
 
     /// <summary>Maximum number of emails in a single bulk request.</summary>
-    public const int MaxBulkEmails = 100;
+    public const int MaxBulkEmails = 1000;
 
     private static readonly Regex EmailRegex = new(
         @"^[^\s@]+@[^\s@]+\.[^\s@]+$",
