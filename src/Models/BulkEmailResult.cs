@@ -30,25 +30,9 @@ public record SendBulkEmailsRequest
     [JsonPropertyName("recipients")]
     public required List<BulkRecipient> Recipients { get; init; }
 
-    [JsonPropertyName("fromEmail")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? FromEmail { get; init; }
-
-    [JsonPropertyName("fromName")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? FromName { get; init; }
-
     [JsonPropertyName("providerType")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? ProviderType { get; init; }
-
-    [JsonPropertyName("batchSize")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public int? BatchSize { get; init; }
-
-    [JsonPropertyName("correlationId")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? CorrelationId { get; init; }
+    public EmailProvider? Provider { get; init; }
 }
 
 /// <summary>
