@@ -16,10 +16,12 @@ namespace Huefy.Sdk;
 /// <code>
 /// using var client = new HuefyEmailClient(new HuefyConfig { ApiKey = "your-api-key" });
 ///
-/// var response = await client.SendEmailAsync(
-///     "welcome",
-///     new Dictionary&lt;string, string&gt; { ["name"] = "John" },
-///     "john@example.com");
+/// var response = await client.SendEmailAsync(new SendEmailRequest
+/// {
+///     TemplateKey = "welcome",
+///     Data = new Dictionary&lt;string, string&gt; { ["name"] = "John" },
+///     Recipient = "john@example.com",
+/// });
 /// </code>
 /// </remarks>
 public sealed class HuefyEmailClient : IDisposable
@@ -43,41 +45,18 @@ public sealed class HuefyEmailClient : IDisposable
     }
 
     /// <summary>
-    /// Sends a single email using the default provider (SES).
+    /// Sends a single email using a template.
     /// </summary>
-    /// <param name="templateKey">The template key identifying the email template.</param>
-    /// <param name="data">Template data variables to merge into the email.</param>
-    /// <param name="recipient">The recipient email address.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>The send email response.</returns>
-    public Task<SendEmailResponse> SendEmailAsync(
-        string templateKey,
-        Dictionary<string, string> data,
-        string recipient,
-        CancellationToken ct = default)
-    {
-        return SendEmailAsync(templateKey, data, recipient, provider: null, ct);
-    }
-
-    /// <summary>
-    /// Sends a single email using the specified provider.
-    /// </summary>
-    /// <param name="templateKey">The template key identifying the email template.</param>
-    /// <param name="data">Template data variables to merge into the email.</param>
-    /// <param name="recipient">The recipient email address.</param>
-    /// <param name="provider">The email provider to use. Pass <c>null</c> for the default (SES).</param>
+    /// <param name="request">The email request containing TemplateKey, Data, Recipient, and optional ProviderType.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>The send email response.</returns>
     public async Task<SendEmailResponse> SendEmailAsync(
-        string templateKey,
-        Dictionary<string, string> data,
-        string recipient,
-        EmailProvider? provider,
+        SendEmailRequest request,
         CancellationToken ct = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        var errors = EmailValidators.ValidateSendEmailInput(templateKey, data, recipient);
+        var errors = EmailValidators.ValidateSendEmailInput(request.TemplateKey, request.Data, request.Recipient);
         if (errors.Count > 0)
         {
             throw HuefyException.ValidationError(
@@ -85,7 +64,7 @@ public sealed class HuefyEmailClient : IDisposable
         }
 
         // Warn if template data values contain potential PII (advisory only — never blocks the send).
-        foreach (var kvp in data)
+        foreach (var kvp in request.Data)
         {
             if (SecurityUtils.ContainsPii(kvp.Value))
             {
@@ -94,71 +73,47 @@ public sealed class HuefyEmailClient : IDisposable
             }
         }
 
-        var request = new SendEmailRequest
+        var normalized = request with
         {
-            TemplateKey = templateKey.Trim(),
-            Recipient = recipient.Trim(),
-            Data = data,
-            ProviderType = provider
+            TemplateKey = request.TemplateKey.Trim(),
+            Recipient = request.Recipient.Trim(),
         };
 
-        return await _httpClient.PostAsync<SendEmailResponse>(EmailsSendPath, request, ct)
+        return await _httpClient.PostAsync<SendEmailResponse>(EmailsSendPath, normalized, ct)
             .ConfigureAwait(false);
     }
 
     /// <summary>
     /// Sends multiple emails in bulk using a shared template.
     /// </summary>
-    /// <param name="templateKey">The template key to use for all recipients.</param>
-    /// <param name="recipients">The list of bulk recipients.</param>
-    /// <param name="fromEmail">Optional sender email address.</param>
-    /// <param name="fromName">Optional sender name.</param>
-    /// <param name="providerType">Optional email provider type.</param>
-    /// <param name="batchSize">Optional batch size.</param>
-    /// <param name="correlationId">Optional correlation ID.</param>
+    /// <param name="request">The bulk email request containing TemplateKey, Recipients, and optional Provider.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>The bulk send response.</returns>
     public async Task<SendBulkEmailsResponse> SendBulkEmailsAsync(
-        string templateKey,
-        List<BulkRecipient> recipients,
-        string? fromEmail = null,
-        string? fromName = null,
-        string? providerType = null,
-        int? batchSize = null,
-        string? correlationId = null,
+        SendBulkEmailsRequest request,
         CancellationToken ct = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        ArgumentNullException.ThrowIfNull(templateKey);
-        ArgumentNullException.ThrowIfNull(recipients);
+        ArgumentNullException.ThrowIfNull(request);
 
-        var countErr = EmailValidators.ValidateBulkCount(recipients.Count);
+        var countErr = EmailValidators.ValidateBulkCount(request.Recipients.Count);
         if (countErr is not null)
         {
             throw HuefyException.ValidationError(countErr);
         }
 
-        for (var i = 0; i < recipients.Count; i++)
+        for (var i = 0; i < request.Recipients.Count; i++)
         {
-            var emailErr = EmailValidators.ValidateEmail(recipients[i].Email);
+            var emailErr = EmailValidators.ValidateEmail(request.Recipients[i].Email);
             if (emailErr is not null)
             {
                 throw HuefyException.ValidationError($"recipients[{i}]: {emailErr}");
             }
         }
 
-        var request = new SendBulkEmailsRequest
-        {
-            TemplateKey = templateKey.Trim(),
-            Recipients = recipients,
-            FromEmail = fromEmail,
-            FromName = fromName,
-            ProviderType = providerType,
-            BatchSize = batchSize,
-            CorrelationId = correlationId,
-        };
+        var normalized = request with { TemplateKey = request.TemplateKey.Trim() };
 
-        return await _httpClient.PostAsync<SendBulkEmailsResponse>(EmailsBulkPath, request, ct)
+        return await _httpClient.PostAsync<SendBulkEmailsResponse>(EmailsBulkPath, normalized, ct)
             .ConfigureAwait(false);
     }
 
