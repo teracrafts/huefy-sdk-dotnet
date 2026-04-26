@@ -13,7 +13,7 @@ public record SendEmailRequest
 
     /// <summary>Template data variables to merge into the email.</summary>
     [JsonPropertyName("data")]
-    public required Dictionary<string, string> Data { get; init; }
+    public required Dictionary<string, object?> Data { get; init; }
 
     /// <summary>The recipient email address.</summary>
     [JsonPropertyName("recipient")]

@@ -12,12 +12,6 @@ namespace Huefy.Sdk.Http;
 /// </summary>
 internal sealed class SdkHttpClient : IDisposable
 {
-    private static readonly HttpClient _sharedHttpClient = new HttpClient(
-        new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) }
-    );
-    private static bool _httpClientConfigured = false;
-    private static readonly object _configLock = new();
-
     private readonly HttpClient _httpClient;
     private readonly RetryHandler _retryHandler;
     private readonly CircuitBreaker _circuitBreaker;
@@ -27,7 +21,6 @@ internal sealed class SdkHttpClient : IDisposable
     private readonly object _keyLock = new();
     private string _activeApiKey;
     private bool _usingSecondaryKey;
-    private bool _disposed;
 
     public SdkHttpClient(HuefyConfig config)
     {
@@ -36,18 +29,14 @@ internal sealed class SdkHttpClient : IDisposable
         _usingSecondaryKey = false;
         _enableSigning = config.EnableRequestSigning;
         _enableSanitization = config.EnableErrorSanitization;
-
-        _httpClient = _sharedHttpClient;
-        lock (_configLock)
+        _httpClient = new HttpClient(
+            new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) }
+        )
         {
-            if (!_httpClientConfigured)
-            {
-                _sharedHttpClient.BaseAddress = new Uri(config.BaseUrl);
-                _sharedHttpClient.Timeout = TimeSpan.FromMilliseconds(config.Timeout);
-                _sharedHttpClient.DefaultRequestHeaders.UserAgent.TryParseAdd(SdkVersion.UserAgent);
-                _httpClientConfigured = true;
-            }
-        }
+            BaseAddress = new Uri(config.BaseUrl),
+            Timeout = TimeSpan.FromMilliseconds(config.Timeout),
+        };
+        _httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd(SdkVersion.UserAgent);
 
         _retryHandler = new RetryHandler(config.RetryConfig);
         _circuitBreaker = new CircuitBreaker(config.CircuitBreakerConfig);
@@ -221,7 +210,6 @@ internal sealed class SdkHttpClient : IDisposable
 
     public void Dispose()
     {
-        // _httpClient is the shared static instance; do not dispose it.
-        _disposed = true;
+        _httpClient.Dispose();
     }
 }

@@ -28,7 +28,7 @@ public sealed class HuefyClient : IDisposable
     public async Task<EmailHealthResponse> HealthCheckAsync(CancellationToken ct = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        return await _httpClient.GetAsync<EmailHealthResponse>("/api/v1/health", ct).ConfigureAwait(false);
+        return await _httpClient.GetAsync<EmailHealthResponse>("/health", ct).ConfigureAwait(false);
     }
 
     /// <summary>

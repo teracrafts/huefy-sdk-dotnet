@@ -1,29 +1,30 @@
-# Teracrafts.Huefy
+# Huefy.Sdk
 
 Official .NET SDK for [Huefy](https://huefy.dev) — transactional email delivery made simple.
 
 ## Installation
 
 ```bash
-dotnet add package Teracrafts.Huefy
+dotnet add package Huefy.Sdk
 ```
 
 Or via NuGet Package Manager:
 
 ```powershell
-Install-Package Teracrafts.Huefy
+Install-Package Huefy.Sdk
 ```
 
 ## Requirements
 
-- .NET 6+
+- .NET 10
 
 ## Quick Start
 
 ```csharp
-using Teracrafts.Huefy;
+using Huefy.Sdk;
+using Huefy.Sdk.Models;
 
-var client = new HuefyEmailClient(new HuefyOptions
+using var client = new HuefyEmailClient(new HuefyConfig
 {
     ApiKey = Environment.GetEnvironmentVariable("HUEFY_API_KEY")!,
 });
@@ -31,40 +32,45 @@ var client = new HuefyEmailClient(new HuefyOptions
 var response = await client.SendEmailAsync(new SendEmailRequest
 {
     TemplateKey = "welcome-email",
-    Recipient = new Recipient { Email = "alice@example.com", Name = "Alice" },
-    Variables = new Dictionary<string, object>
+    Recipient = "alice@example.com",
+    Data = new Dictionary<string, object?>
     {
         ["firstName"] = "Alice",
         ["trialDays"] = 14,
     },
 });
 
-Console.WriteLine($"Message ID: {response.MessageId}");
-client.Dispose();
+Console.WriteLine($"Email ID: {response.Data.EmailId}");
 ```
 
 ## ASP.NET Core / Dependency Injection
 
 ```csharp
 // Program.cs
-builder.Services.AddHuefy(options =>
+using Huefy.Sdk;
+
+builder.Services.AddSingleton(new HuefyEmailClient(new HuefyConfig
 {
-    options.ApiKey = builder.Configuration["Huefy:ApiKey"]!;
-});
+    ApiKey = builder.Configuration["Huefy:ApiKey"]!,
+}));
 ```
 
-This registers `IHuefyEmailClient` as a singleton and wires up `IHttpClientFactory` for optimal connection reuse.
+This registers a singleton `HuefyEmailClient` instance for application-wide reuse.
 
 ```csharp
 // MyService.cs
-public class MyService(IHuefyEmailClient huefy)
+using Huefy.Sdk;
+using Huefy.Sdk.Models;
+
+public class MyService(HuefyEmailClient huefy)
 {
     public async Task SendWelcomeAsync(string email)
     {
         await huefy.SendEmailAsync(new SendEmailRequest
         {
             TemplateKey = "welcome-email",
-            Recipient = new Recipient { Email = email },
+            Recipient = email,
+            Data = new Dictionary<string, object?>(),
         });
     }
 }
@@ -104,37 +110,40 @@ public class MyService(IHuefyEmailClient huefy)
 ## Bulk Email
 
 ```csharp
-var bulk = await client.SendBulkEmailsAsync(new BulkEmailRequest
-{
-    Emails =
-    [
-        new SendEmailRequest { TemplateKey = "promo", Recipient = new Recipient { Email = "bob@example.com" } },
-        new SendEmailRequest { TemplateKey = "promo", Recipient = new Recipient { Email = "carol@example.com" } },
-    ],
-}, cancellationToken);
+using Huefy.Sdk.Models;
 
-Console.WriteLine($"Sent: {bulk.TotalSent}, Failed: {bulk.TotalFailed}");
+var bulk = await client.SendBulkEmailsAsync(new SendBulkEmailsRequest
+{
+    TemplateKey = "promo",
+    Recipients =
+    [
+        new BulkRecipient { Email = "bob@example.com" },
+        new BulkRecipient { Email = "carol@example.com" },
+    ],
+});
+
+Console.WriteLine($"Sent: {bulk.Data.SuccessCount}, Failed: {bulk.Data.FailureCount}");
 ```
 
 ## Error Handling
 
 ```csharp
-using Teracrafts.Huefy.Exceptions;
+using Huefy.Sdk.Errors;
 
 try
 {
-    var response = await client.SendEmailAsync(request, cancellationToken);
-    Console.WriteLine($"Delivered: {response.MessageId}");
+    var response = await client.SendEmailAsync(request);
+    Console.WriteLine($"Delivered: {response.Data.EmailId}");
 }
-catch (HuefyAuthException)
+catch (HuefyException e) when (e.Code == ErrorCode.AuthenticationFailed)
 {
     Console.Error.WriteLine("Invalid API key");
 }
-catch (HuefyRateLimitException e)
+catch (HuefyException e) when (e.Code == ErrorCode.RateLimited)
 {
-    Console.Error.WriteLine($"Rate limited. Retry after {e.RetryAfter}s");
+    Console.Error.WriteLine($"Rate limited. Retry after {e.RetryAfter}ms");
 }
-catch (HuefyCircuitOpenException)
+catch (HuefyException e) when (e.Code == ErrorCode.CircuitBreakerOpen)
 {
     Console.Error.WriteLine("Circuit open — service unavailable, backing off");
 }
@@ -159,21 +168,21 @@ catch (HuefyException e)
 
 ```csharp
 var health = await client.HealthCheckAsync();
-if (health.Status != "healthy")
+if (health.Data.Status != "healthy")
 {
-    logger.LogWarning("Huefy degraded: {Status}", health.Status);
+    logger.LogWarning("Huefy degraded: {Status}", health.Data.Status);
 }
 ```
 
 ## Local Development
 
-Set `HUEFY_MODE=local` to point the SDK at a local Huefy server, or override `BaseUrl` in options:
+`HUEFY_MODE=local` resolves to `https://api.huefy.on/api/v1/sdk` in the current SDK. To target a localhost server, override `BaseUrl` explicitly:
 
 ```csharp
-var client = new HuefyEmailClient(new HuefyOptions
+var client = new HuefyEmailClient(new HuefyConfig
 {
     ApiKey = "sdk_local_key",
-    BaseUrl = new Uri("http://localhost:3000/api/v1/sdk"),
+    BaseUrl = "http://localhost:3000/api/v1/sdk",
 });
 ```
 

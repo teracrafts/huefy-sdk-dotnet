@@ -66,7 +66,7 @@ public sealed class HuefyEmailClient : IDisposable
         // Warn if template data values contain potential PII (advisory only — never blocks the send).
         foreach (var kvp in request.Data)
         {
-            if (SecurityUtils.ContainsPii(kvp.Value))
+            if (kvp.Value is not null && SecurityUtils.ContainsPii(kvp.Value.ToString() ?? string.Empty))
             {
                 _logger.Log(HuefyLogLevel.Warning,
                     $"Potential PII detected in template data field '{kvp.Key}'. Consider removing or encrypting sensitive fields.");

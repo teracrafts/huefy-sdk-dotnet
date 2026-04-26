@@ -111,7 +111,7 @@ public class EmailValidatorsTests
     public void ValidateEmailData_ValidData_ReturnsNull()
     {
         Assert.Null(EmailValidators.ValidateEmailData(
-            new Dictionary<string, string> { ["name"] = "John" }));
+            new Dictionary<string, object?> { ["name"] = "John" }));
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class EmailValidatorsTests
     [Fact]
     public void ValidateEmailData_EmptyData_ReturnsNull()
     {
-        Assert.Null(EmailValidators.ValidateEmailData(new Dictionary<string, string>()));
+        Assert.Null(EmailValidators.ValidateEmailData(new Dictionary<string, object?>()));
     }
 
     // -------------------------------------------------------------------------
@@ -139,7 +139,7 @@ public class EmailValidatorsTests
     [Fact]
     public void ValidateBulkCount_AtLimit_ReturnsNull()
     {
-        Assert.Null(EmailValidators.ValidateBulkCount(100));
+        Assert.Null(EmailValidators.ValidateBulkCount(1000));
     }
 
     [Fact]
@@ -157,7 +157,7 @@ public class EmailValidatorsTests
     [Fact]
     public void ValidateBulkCount_OverLimit_ReturnsError()
     {
-        var result = EmailValidators.ValidateBulkCount(101);
+        var result = EmailValidators.ValidateBulkCount(1001);
         Assert.NotNull(result);
         Assert.Contains("maximum", result);
     }
@@ -171,7 +171,7 @@ public class EmailValidatorsTests
     {
         var errors = EmailValidators.ValidateSendEmailInput(
             "welcome",
-            new Dictionary<string, string> { ["name"] = "John" },
+            new Dictionary<string, object?> { ["name"] = "John" },
             "user@example.com");
 
         Assert.Empty(errors);
@@ -189,7 +189,7 @@ public class EmailValidatorsTests
     {
         var errors = EmailValidators.ValidateSendEmailInput(
             "welcome",
-            new Dictionary<string, string> { ["name"] = "John" },
+            new Dictionary<string, object?> { ["name"] = "John" },
             "bad");
 
         Assert.Single(errors);

@@ -21,7 +21,7 @@ public class HuefyEmailClientTests
             client.SendEmailAsync(new SendEmailRequest
             {
                 TemplateKey = "",
-                Data = new Dictionary<string, string> { ["name"] = "John" },
+                Data = new Dictionary<string, object?> { ["name"] = "John" },
                 Recipient = "john@example.com",
             }));
     }
@@ -34,7 +34,7 @@ public class HuefyEmailClientTests
             client.SendEmailAsync(new SendEmailRequest
             {
                 TemplateKey = "welcome",
-                Data = new Dictionary<string, string> { ["name"] = "John" },
+                Data = new Dictionary<string, object?> { ["name"] = "John" },
                 Recipient = "not-an-email",
             }));
         Assert.Contains("Validation", ex.Message);
@@ -49,7 +49,7 @@ public class HuefyEmailClientTests
             client.SendEmailAsync(new SendEmailRequest
             {
                 TemplateKey = "welcome",
-                Data = new Dictionary<string, string>(),
+                Data = new Dictionary<string, object?>(),
                 Recipient = "john@example.com",
             }));
     }
@@ -109,7 +109,7 @@ public class HuefyEmailClientTests
         var req = new SendEmailRequest
         {
             TemplateKey = "welcome",
-            Data = new Dictionary<string, string> { ["name"] = "John" },
+            Data = new Dictionary<string, object?> { ["name"] = "John" },
             Recipient = "john@example.com",
         };
         Assert.Equal("welcome", req.TemplateKey);

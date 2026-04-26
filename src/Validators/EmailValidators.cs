@@ -67,7 +67,7 @@ public static partial class EmailValidators
     /// </summary>
     /// <param name="data">The template data dictionary.</param>
     /// <returns>An error message string, or <c>null</c> if valid.</returns>
-    public static string? ValidateEmailData(Dictionary<string, string>? data)
+    public static string? ValidateEmailData(Dictionary<string, object?>? data)
     {
         if (data is null)
             return "template data is required";
@@ -100,7 +100,7 @@ public static partial class EmailValidators
     /// <returns>A list of error message strings. Empty if all inputs are valid.</returns>
     public static List<string> ValidateSendEmailInput(
         string templateKey,
-        Dictionary<string, string>? data,
+        Dictionary<string, object?>? data,
         string recipient)
     {
         var errors = new List<string>();
