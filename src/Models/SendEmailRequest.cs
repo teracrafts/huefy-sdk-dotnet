@@ -15,9 +15,11 @@ public record SendEmailRequest
     [JsonPropertyName("data")]
     public required Dictionary<string, object?> Data { get; init; }
 
-    /// <summary>The recipient email address.</summary>
+    /// <summary>
+    /// The recipient, either as an email string or a <see cref="SendEmailRecipient"/> object.
+    /// </summary>
     [JsonPropertyName("recipient")]
-    public required string Recipient { get; init; }
+    public required object Recipient { get; init; }
 
     /// <summary>The email provider to use. Defaults to SES if not specified.</summary>
     [JsonPropertyName("providerType")]

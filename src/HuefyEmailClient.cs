@@ -4,6 +4,7 @@ using Huefy.Sdk.Models;
 using Huefy.Sdk.Security;
 using Huefy.Sdk.Validators;
 using Huefy.Utils;
+using System.Linq;
 
 namespace Huefy.Sdk;
 
@@ -20,7 +21,7 @@ namespace Huefy.Sdk;
 /// {
 ///     TemplateKey = "welcome",
 ///     Data = new Dictionary&lt;string, string&gt; { ["name"] = "John" },
-///     Recipient = "john@example.com",
+///     Recipient = new SendEmailRecipient { Email = "john@example.com", Type = "cc" },
 /// });
 /// </code>
 /// </remarks>
@@ -73,14 +74,78 @@ public sealed class HuefyEmailClient : IDisposable
             }
         }
 
+        WarnIfPotentialRecipientPii(request.Recipient);
+
         var normalized = request with
         {
             TemplateKey = request.TemplateKey.Trim(),
-            Recipient = request.Recipient.Trim(),
+            Recipient = NormalizeRecipient(request.Recipient),
         };
 
         return await _httpClient.PostAsync<SendEmailResponse>(EmailsSendPath, normalized, ct)
             .ConfigureAwait(false);
+    }
+
+    private static object NormalizeRecipient(object recipient) => recipient switch
+    {
+        string email => email.Trim(),
+        SendEmailRecipient sendEmailRecipient => sendEmailRecipient with
+        {
+            Email = sendEmailRecipient.Email.Trim(),
+            Type = sendEmailRecipient.Type?.Trim().ToLowerInvariant(),
+        },
+        IDictionary<string, object?> map => NormalizeRecipientMap(map),
+        IDictionary<string, string> map => NormalizeRecipientMap(map.ToDictionary(
+            pair => pair.Key,
+            pair => (object?)pair.Value)),
+        _ => recipient,
+    };
+
+    private static Dictionary<string, object?> NormalizeRecipientMap(IDictionary<string, object?> map)
+    {
+        var normalized = new Dictionary<string, object?>(map);
+        if (normalized.TryGetValue("email", out var email) && email is string emailText)
+        {
+            normalized["email"] = emailText.Trim();
+        }
+
+        if (normalized.TryGetValue("type", out var recipientType) && recipientType is string typeText)
+        {
+            normalized["type"] = typeText.Trim().ToLowerInvariant();
+        }
+
+        return normalized;
+    }
+
+    private void WarnIfPotentialRecipientPii(object recipient)
+    {
+        switch (recipient)
+        {
+            case SendEmailRecipient sendEmailRecipient when sendEmailRecipient.Data is not null:
+                WarnIfPotentialPii(sendEmailRecipient.Data, "recipient data");
+                break;
+            case IDictionary<string, object?> map
+                when map.TryGetValue("data", out var recipientData)
+                     && recipientData is IDictionary<string, object?> data:
+                WarnIfPotentialPii(data, "recipient data");
+                break;
+            case IDictionary<string, string> map
+                when map.TryGetValue("data", out var rawRecipientData):
+                WarnIfPotentialPii(new Dictionary<string, object?> { ["data"] = rawRecipientData }, "recipient data");
+                break;
+        }
+    }
+
+    private void WarnIfPotentialPii(IDictionary<string, object?> data, string dataType)
+    {
+        foreach (var kvp in data)
+        {
+            if (kvp.Value is not null && SecurityUtils.ContainsPii(kvp.Value.ToString() ?? string.Empty))
+            {
+                _logger.Log(HuefyLogLevel.Warning,
+                    $"Potential PII detected in {dataType} field '{kvp.Key}'. Consider removing or encrypting sensitive fields.");
+            }
+        }
     }
 
     /// <summary>

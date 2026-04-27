@@ -41,6 +41,43 @@ public class HuefyEmailClientTests
     }
 
     [Fact]
+    public async Task SendEmailAsync_InvalidRecipientObject_ThrowsValidation()
+    {
+        using var client = MakeClient();
+        var ex = await Assert.ThrowsAsync<HuefyException>(() =>
+            client.SendEmailAsync(new SendEmailRequest
+            {
+                TemplateKey = "welcome",
+                Data = new Dictionary<string, object?> { ["name"] = "John" },
+                Recipient = new SendEmailRecipient
+                {
+                    Email = "not-an-email",
+                    Type = "cc",
+                    Data = new Dictionary<string, object?> { ["locale"] = "en" },
+                },
+            }));
+        Assert.Contains("Validation", ex.Message);
+    }
+
+    [Fact]
+    public async Task SendEmailAsync_InvalidRecipientObjectType_ThrowsValidation()
+    {
+        using var client = MakeClient();
+        var ex = await Assert.ThrowsAsync<HuefyException>(() =>
+            client.SendEmailAsync(new SendEmailRequest
+            {
+                TemplateKey = "welcome",
+                Data = new Dictionary<string, object?> { ["name"] = "John" },
+                Recipient = new SendEmailRecipient
+                {
+                    Email = "john@example.com",
+                    Type = "reply-to",
+                },
+            }));
+        Assert.Contains("recipient type", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task SendEmailAsync_DisposedClient_ThrowsObjectDisposed()
     {
         var client = MakeClient();
@@ -116,6 +153,27 @@ public class HuefyEmailClientTests
         Assert.Equal("john@example.com", req.Recipient);
         Assert.Equal("John", req.Data["name"]);
         Assert.Null(req.ProviderType);
+    }
+
+    [Fact]
+    public void SendEmailRequest_AcceptsRecipientObject()
+    {
+        var req = new SendEmailRequest
+        {
+            TemplateKey = "welcome",
+            Data = new Dictionary<string, object?> { ["name"] = "John" },
+            Recipient = new SendEmailRecipient
+            {
+                Email = "john@example.com",
+                Type = "bcc",
+                Data = new Dictionary<string, object?> { ["segment"] = "vip" },
+            },
+        };
+
+        var recipient = Assert.IsType<SendEmailRecipient>(req.Recipient);
+        Assert.Equal("john@example.com", recipient.Email);
+        Assert.Equal("bcc", recipient.Type);
+        Assert.Equal("vip", recipient.Data!["segment"]);
     }
 
     [Fact]

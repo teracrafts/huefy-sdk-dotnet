@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Huefy.Sdk.Models;
 
 namespace Huefy.Sdk.Validators;
 
@@ -7,6 +8,13 @@ namespace Huefy.Sdk.Validators;
 /// </summary>
 public static partial class EmailValidators
 {
+    private static readonly HashSet<string> ValidRecipientTypes =
+    [
+        "to",
+        "cc",
+        "bcc",
+    ];
+
     /// <summary>Maximum allowed email address length.</summary>
     public const int MaxEmailLength = 254;
 
@@ -101,7 +109,7 @@ public static partial class EmailValidators
     public static List<string> ValidateSendEmailInput(
         string templateKey,
         Dictionary<string, object?>? data,
-        string recipient)
+        object recipient)
     {
         var errors = new List<string>();
 
@@ -111,9 +119,99 @@ public static partial class EmailValidators
         var dataErr = ValidateEmailData(data);
         if (dataErr is not null) errors.Add(dataErr);
 
-        var emailErr = ValidateEmail(recipient);
+        var emailErr = ValidateRecipient(recipient);
         if (emailErr is not null) errors.Add(emailErr);
 
         return errors;
     }
+
+    /// <summary>
+    /// Validates a send-email recipient value.
+    /// </summary>
+    /// <param name="recipient">A recipient email string or recipient object.</param>
+    /// <returns>An error message string, or <c>null</c> if valid.</returns>
+    public static string? ValidateRecipient(object? recipient)
+    {
+        switch (recipient)
+        {
+            case null:
+                return "recipient email is required";
+            case string email:
+                return ValidateEmail(email);
+            case SendEmailRecipient sendEmailRecipient:
+            {
+                var emailError = ValidateEmail(sendEmailRecipient.Email);
+                if (emailError is not null)
+                {
+                    return emailError;
+                }
+
+                var typeError = ValidateRecipientType(sendEmailRecipient.Type);
+                if (typeError is not null)
+                {
+                    return typeError;
+                }
+
+                return ValidateRecipientData(sendEmailRecipient.Data);
+            }
+            case IDictionary<string, object?> map:
+            {
+                if (!map.TryGetValue("email", out var emailValue) || emailValue is not string emailValueText)
+                {
+                    return "recipient email is required";
+                }
+
+                var emailError = ValidateEmail(emailValueText);
+                if (emailError is not null)
+                {
+                    return emailError;
+                }
+
+                map.TryGetValue("type", out var recipientTypeValue);
+                var typeError = ValidateRecipientType(recipientTypeValue);
+                if (typeError is not null)
+                {
+                    return typeError;
+                }
+
+                map.TryGetValue("data", out var recipientDataValue);
+                return ValidateRecipientData(recipientDataValue);
+            }
+            case IDictionary<string, string> map:
+            {
+                if (!map.TryGetValue("email", out var email))
+                {
+                    return "recipient email is required";
+                }
+
+                var emailError = ValidateEmail(email);
+                if (emailError is not null)
+                {
+                    return emailError;
+                }
+
+                map.TryGetValue("type", out var recipientType);
+                return ValidateRecipientType(recipientType);
+            }
+            default:
+                return "recipient must be a string or recipient object";
+        }
+    }
+
+    private static string? ValidateRecipientType(object? recipientType) => recipientType switch
+    {
+        null => null,
+        string recipientTypeText when string.IsNullOrWhiteSpace(recipientTypeText) => null,
+        string recipientTypeText when ValidRecipientTypes.Contains(recipientTypeText.Trim().ToLowerInvariant()) => null,
+        string => "recipient type must be one of: to, cc, bcc",
+        _ => "recipient type must be one of: to, cc, bcc",
+    };
+
+    private static string? ValidateRecipientData(object? recipientData) => recipientData switch
+    {
+        null => null,
+        IDictionary<string, object?> => null,
+        IDictionary<string, string> => null,
+        _ => "recipient data must be an object",
+    };
 }

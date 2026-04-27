@@ -32,7 +32,12 @@ using var client = new HuefyEmailClient(new HuefyConfig
 var response = await client.SendEmailAsync(new SendEmailRequest
 {
     TemplateKey = "welcome-email",
-    Recipient = "alice@example.com",
+    Recipient = new SendEmailRecipient
+    {
+        Email = "alice@example.com",
+        Type = "cc",
+        Data = new Dictionary<string, object?> { ["locale"] = "en" },
+    },
     Data = new Dictionary<string, object?>
     {
         ["firstName"] = "Alice",
@@ -176,13 +181,13 @@ if (health.Data.Status != "healthy")
 
 ## Local Development
 
-`HUEFY_MODE=local` resolves to `https://api.huefy.on/api/v1/sdk` in the current SDK. To target a localhost server, override `BaseUrl` explicitly:
+`HUEFY_MODE=local` resolves to `https://api.huefy.on/api/v1/sdk`. To bypass Caddy and hit the raw app port directly, override `BaseUrl` to `http://localhost:8080/api/v1/sdk`:
 
 ```csharp
 var client = new HuefyEmailClient(new HuefyConfig
 {
     ApiKey = "sdk_local_key",
-    BaseUrl = "http://localhost:3000/api/v1/sdk",
+    BaseUrl = "https://api.huefy.on/api/v1/sdk",
 });
 ```
 
@@ -192,7 +197,7 @@ Or via `appsettings.Development.json`:
 {
   "Huefy": {
     "ApiKey": "sdk_local_key",
-    "BaseUrl": "http://localhost:3000/api/v1/sdk"
+    "BaseUrl": "https://api.huefy.on/api/v1/sdk"
   }
 }
 ```

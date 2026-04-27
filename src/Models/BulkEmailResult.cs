@@ -49,6 +49,15 @@ public record SendBulkEmailsResponseData
     [JsonPropertyName("templateKey")]
     public string TemplateKey { get; init; } = string.Empty;
 
+    [JsonPropertyName("templateVersion")]
+    public int TemplateVersion { get; init; }
+
+    [JsonPropertyName("senderUsed")]
+    public string SenderUsed { get; init; } = string.Empty;
+
+    [JsonPropertyName("senderVerified")]
+    public bool SenderVerified { get; init; }
+
     [JsonPropertyName("totalRecipients")]
     public int TotalRecipients { get; init; }
 
@@ -72,6 +81,12 @@ public record SendBulkEmailsResponseData
 
     [JsonPropertyName("recipients")]
     public List<RecipientStatus> Recipients { get; init; } = [];
+
+    [JsonPropertyName("errors")]
+    public List<Dictionary<string, object?>> Errors { get; init; } = [];
+
+    [JsonPropertyName("metadata")]
+    public Dictionary<string, object?>? Metadata { get; init; }
 }
 
 /// <summary>
