@@ -198,6 +198,28 @@ public static partial class EmailValidators
         }
     }
 
+    public static string? ValidateBulkRecipient(BulkRecipient? recipient)
+    {
+        if (recipient is null)
+        {
+            return "recipient email is required";
+        }
+
+        var emailError = ValidateEmail(recipient.Email);
+        if (emailError is not null)
+        {
+            return emailError;
+        }
+
+        var typeError = ValidateRecipientType(recipient.Type);
+        if (typeError is not null)
+        {
+            return typeError;
+        }
+
+        return ValidateRecipientData(recipient.Data);
+    }
+
     private static string? ValidateRecipientType(object? recipientType) => recipientType switch
     {
         null => null,

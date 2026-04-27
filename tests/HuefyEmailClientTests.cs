@@ -124,6 +124,39 @@ public class HuefyEmailClientTests
     }
 
     [Fact]
+    public async Task SendBulkEmailsAsync_BlankTemplateKey_ThrowsValidation()
+    {
+        using var client = MakeClient();
+        var ex = await Assert.ThrowsAsync<HuefyException>(() =>
+            client.SendBulkEmailsAsync(new SendBulkEmailsRequest
+            {
+                TemplateKey = "   ",
+                Recipients = new List<BulkRecipient>
+                {
+                    new() { Email = "john@example.com" },
+                },
+            }));
+        Assert.Contains("Template key", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task SendBulkEmailsAsync_InvalidRecipientType_ThrowsWithIndex()
+    {
+        using var client = MakeClient();
+        var ex = await Assert.ThrowsAsync<HuefyException>(() =>
+            client.SendBulkEmailsAsync(new SendBulkEmailsRequest
+            {
+                TemplateKey = "welcome",
+                Recipients = new List<BulkRecipient>
+                {
+                    new() { Email = "john@example.com", Type = "reply-to" },
+                },
+            }));
+        Assert.Contains("recipients[0]", ex.Message);
+        Assert.Contains("recipient type", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task SendBulkEmailsAsync_DisposedClient_ThrowsObjectDisposed()
     {
         var client = MakeClient();

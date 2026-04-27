@@ -16,7 +16,7 @@ public record BulkRecipient
 
     [JsonPropertyName("data")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public Dictionary<string, string>? Data { get; init; }
+    public Dictionary<string, object?>? Data { get; init; }
 }
 
 /// <summary>

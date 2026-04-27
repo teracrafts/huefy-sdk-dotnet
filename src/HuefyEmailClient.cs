@@ -167,16 +167,30 @@ public sealed class HuefyEmailClient : IDisposable
             throw HuefyException.ValidationError(countErr);
         }
 
+        var templateErr = EmailValidators.ValidateTemplateKey(request.TemplateKey);
+        if (templateErr is not null)
+        {
+            throw HuefyException.ValidationError(templateErr);
+        }
+
         for (var i = 0; i < request.Recipients.Count; i++)
         {
-            var emailErr = EmailValidators.ValidateEmail(request.Recipients[i].Email);
-            if (emailErr is not null)
+            var recipientErr = EmailValidators.ValidateBulkRecipient(request.Recipients[i]);
+            if (recipientErr is not null)
             {
-                throw HuefyException.ValidationError($"recipients[{i}]: {emailErr}");
+                throw HuefyException.ValidationError($"recipients[{i}]: {recipientErr}");
             }
         }
 
-        var normalized = request with { TemplateKey = request.TemplateKey.Trim() };
+        var normalized = request with
+        {
+            TemplateKey = request.TemplateKey.Trim(),
+            Recipients = request.Recipients.Select(r => r with
+            {
+                Email = r.Email.Trim(),
+                Type = r.Type?.Trim().ToLowerInvariant(),
+            }).ToList(),
+        };
 
         return await _httpClient.PostAsync<SendBulkEmailsResponse>(EmailsBulkPath, normalized, ct)
             .ConfigureAwait(false);
