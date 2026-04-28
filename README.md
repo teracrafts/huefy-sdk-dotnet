@@ -1,17 +1,17 @@
-# Huefy.Sdk
+# Teracrafts.Huefy.Sdk
 
 Official .NET SDK for [Huefy](https://huefy.dev) — transactional email delivery made simple.
 
 ## Installation
 
 ```bash
-dotnet add package Huefy.Sdk
+dotnet add package Teracrafts.Huefy.Sdk
 ```
 
 Or via NuGet Package Manager:
 
 ```powershell
-Install-Package Huefy.Sdk
+Install-Package Teracrafts.Huefy.Sdk
 ```
 
 ## Requirements
@@ -21,8 +21,8 @@ Install-Package Huefy.Sdk
 ## Quick Start
 
 ```csharp
-using Huefy.Sdk;
-using Huefy.Sdk.Models;
+using Teracrafts.Huefy.Sdk;
+using Teracrafts.Huefy.Sdk.Models;
 
 using var client = new HuefyEmailClient(new HuefyConfig
 {
@@ -52,7 +52,7 @@ Console.WriteLine($"Email ID: {response.Data.EmailId}");
 
 ```csharp
 // Program.cs
-using Huefy.Sdk;
+using Teracrafts.Huefy.Sdk;
 
 builder.Services.AddSingleton(new HuefyEmailClient(new HuefyConfig
 {
@@ -64,8 +64,8 @@ This registers a singleton `HuefyEmailClient` instance for application-wide reus
 
 ```csharp
 // MyService.cs
-using Huefy.Sdk;
-using Huefy.Sdk.Models;
+using Teracrafts.Huefy.Sdk;
+using Teracrafts.Huefy.Sdk.Models;
 
 public class MyService(HuefyEmailClient huefy)
 {
@@ -115,7 +115,7 @@ public class MyService(HuefyEmailClient huefy)
 ## Bulk Email
 
 ```csharp
-using Huefy.Sdk.Models;
+using Teracrafts.Huefy.Sdk.Models;
 
 var bulk = await client.SendBulkEmailsAsync(new SendBulkEmailsRequest
 {
@@ -133,7 +133,7 @@ Console.WriteLine($"Sent: {bulk.Data.SuccessCount}, Failed: {bulk.Data.FailureCo
 ## Error Handling
 
 ```csharp
-using Huefy.Sdk.Errors;
+using Teracrafts.Huefy.Sdk.Errors;
 
 try
 {

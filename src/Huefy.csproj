@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <RootNamespace>Huefy.Sdk</RootNamespace>
+    <RootNamespace>Teracrafts.Huefy.Sdk</RootNamespace>
     <Version>1.0.0</Version>
-    <PackageId>Huefy.Sdk</PackageId>
+    <AssemblyName>Teracrafts.Huefy.Sdk</AssemblyName>
+    <PackageId>Teracrafts.Huefy.Sdk</PackageId>
     <Authors>teracrafts</Authors>
-    <Description>Huefy SDK for .NET</Description>
+    <Description>Teracrafts Huefy SDK for .NET</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/teracrafts/huefy-sdk</RepositoryUrl>
     <ImplicitUsings>enable</ImplicitUsings>

@@ -1,4 +1,4 @@
-namespace Huefy.Sdk.Errors;
+namespace Teracrafts.Huefy.Sdk.Errors;
 
 /// <summary>
 /// Enumeration of all SDK error codes.

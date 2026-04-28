@@ -1,4 +1,4 @@
-namespace Huefy.Sdk.Utils;
+namespace Teracrafts.Huefy.Sdk.Utils;
 
 /// <summary>
 /// SDK version information.

@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Huefy.Sdk.Errors;
+namespace Teracrafts.Huefy.Sdk.Errors;
 
 /// <summary>
 /// Sanitizes error messages and payloads by redacting sensitive information.

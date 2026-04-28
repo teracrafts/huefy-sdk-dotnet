@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Huefy.Sdk.Models;
+namespace Teracrafts.Huefy.Sdk.Models;
 
 /// <summary>
 /// A single recipient in a bulk email send.

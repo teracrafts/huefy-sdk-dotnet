@@ -1,8 +1,9 @@
-using Huefy.Sdk.Errors;
-using Huefy.Sdk.Models;
+using Teracrafts.Huefy.Sdk;
+using Teracrafts.Huefy.Sdk.Errors;
+using Teracrafts.Huefy.Sdk.Models;
 using Xunit;
 
-namespace Huefy.Sdk.Tests;
+namespace Teracrafts.Huefy.Sdk.Tests;
 
 public class HuefyEmailClientTests
 {

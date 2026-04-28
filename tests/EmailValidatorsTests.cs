@@ -1,7 +1,7 @@
-using Huefy.Sdk.Validators;
+using Teracrafts.Huefy.Sdk.Validators;
 using Xunit;
 
-namespace Huefy.Sdk.Tests;
+namespace Teracrafts.Huefy.Sdk.Tests;
 
 public class EmailValidatorsTests
 {

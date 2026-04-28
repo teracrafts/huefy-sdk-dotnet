@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>Huefy.SdkLab</RootNamespace>
+    <RootNamespace>Teracrafts.Huefy.SdkLab</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../src/Huefy.csproj" />

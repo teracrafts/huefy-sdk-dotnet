@@ -1,4 +1,4 @@
-namespace Huefy.Sdk.Errors;
+namespace Teracrafts.Huefy.Sdk.Errors;
 
 /// <summary>
 /// Base exception for all Huefy SDK errors.

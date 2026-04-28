@@ -1,7 +1,7 @@
-using Huefy.Sdk.Http;
-using Huefy.Sdk.Models;
+using Teracrafts.Huefy.Sdk.Http;
+using Teracrafts.Huefy.Sdk.Models;
 
-namespace Huefy.Sdk;
+namespace Teracrafts.Huefy.Sdk;
 
 /// <summary>
 /// Main client for the Huefy SDK.

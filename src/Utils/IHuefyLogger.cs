@@ -1,4 +1,4 @@
-namespace Huefy.Utils;
+namespace Teracrafts.Huefy.Utils;
 
 public enum HuefyLogLevel
 {

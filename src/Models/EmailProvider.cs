@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Huefy.Sdk.Models;
+namespace Teracrafts.Huefy.Sdk.Models;
 
 /// <summary>
 /// Supported email providers for the Huefy API.

@@ -1,12 +1,12 @@
-using Huefy.Sdk.Errors;
-using Huefy.Sdk.Http;
-using Huefy.Sdk.Models;
-using Huefy.Sdk.Security;
-using Huefy.Sdk.Validators;
-using Huefy.Utils;
+using Teracrafts.Huefy.Sdk.Errors;
+using Teracrafts.Huefy.Sdk.Http;
+using Teracrafts.Huefy.Sdk.Models;
+using Teracrafts.Huefy.Sdk.Security;
+using Teracrafts.Huefy.Sdk.Validators;
+using Teracrafts.Huefy.Utils;
 using System.Linq;
 
-namespace Huefy.Sdk;
+namespace Teracrafts.Huefy.Sdk;
 
 /// <summary>
 /// Email-focused client for the Huefy SDK.

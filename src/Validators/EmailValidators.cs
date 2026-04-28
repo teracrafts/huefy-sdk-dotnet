@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
-using Huefy.Sdk.Models;
+using Teracrafts.Huefy.Sdk.Models;
 
-namespace Huefy.Sdk.Validators;
+namespace Teracrafts.Huefy.Sdk.Validators;
 
 /// <summary>
 /// Validation utilities for email-related inputs.

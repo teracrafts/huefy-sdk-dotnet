@@ -1,8 +1,8 @@
-using Huefy.Sdk.Errors;
-using Huefy.Sdk.Security;
+using Teracrafts.Huefy.Sdk.Errors;
+using Teracrafts.Huefy.Sdk.Security;
 using Xunit;
 
-namespace Huefy.Sdk.Tests;
+namespace Teracrafts.Huefy.Sdk.Tests;
 
 public class SecurityTests
 {

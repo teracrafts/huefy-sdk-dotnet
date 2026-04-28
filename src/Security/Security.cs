@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Huefy.Sdk.Security;
+namespace Teracrafts.Huefy.Sdk.Security;
 
 /// <summary>
 /// Security utilities: HMAC-SHA256 request signing, PII detection, and key helpers.

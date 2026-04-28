@@ -1,6 +1,6 @@
-namespace Huefy.Sdk.Http;
+namespace Teracrafts.Huefy.Sdk.Http;
 
-using Huefy.Sdk.Errors;
+using Teracrafts.Huefy.Sdk.Errors;
 
 /// <summary>
 /// Retry handler with exponential backoff and jitter.

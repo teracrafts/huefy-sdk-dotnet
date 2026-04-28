@@ -1,9 +1,9 @@
-using Huefy.Sdk;
-using Huefy.Sdk.Errors;
-using Huefy.Sdk.Http;
+using Teracrafts.Huefy.Sdk;
+using Teracrafts.Huefy.Sdk.Errors;
+using Teracrafts.Huefy.Sdk.Http;
 using Xunit;
 
-namespace Huefy.Sdk.Tests;
+namespace Teracrafts.Huefy.Sdk.Tests;
 
 public class CircuitBreakerTests
 {

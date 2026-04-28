@@ -1,11 +1,11 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using Huefy.Sdk.Errors;
-using Huefy.Sdk.Security;
-using Huefy.Sdk.Utils;
+using Teracrafts.Huefy.Sdk.Errors;
+using Teracrafts.Huefy.Sdk.Security;
+using Teracrafts.Huefy.Sdk.Utils;
 
-namespace Huefy.Sdk.Http;
+namespace Teracrafts.Huefy.Sdk.Http;
 
 /// <summary>
 /// Internal HTTP client with retry, circuit breaker, key rotation, and HMAC signing.

@@ -1,7 +1,7 @@
-using Huefy.Sdk;
-using Huefy.Sdk.Errors;
-using Huefy.Sdk.Http;
-using Huefy.Sdk.Security;
+using Teracrafts.Huefy.Sdk;
+using Teracrafts.Huefy.Sdk.Errors;
+using Teracrafts.Huefy.Sdk.Http;
+using Teracrafts.Huefy.Sdk.Security;
 
 const string Green = "\u001B[32m";
 const string Red   = "\u001B[31m";

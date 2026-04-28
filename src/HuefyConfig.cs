@@ -1,6 +1,6 @@
-using Huefy.Utils;
+using Teracrafts.Huefy.Utils;
 
-namespace Huefy.Sdk;
+namespace Teracrafts.Huefy.Sdk;
 
 /// <summary>
 /// Parsed rate-limit header values from an API response.
