@@ -1,22 +1,26 @@
 # Huefy .NET SDK Lab
 
-Exercises the core SDK capabilities and prints a pass/fail report.
+Verifies the core email contract through the real `.NET` email client against a local stub server.
 
 ## Run
 
 ```bash
-dotnet run --project sdk-lab
+dotnet run
 ```
 
-from the `sdks/dotnet/` directory.
+from `sdks/dotnet/sdk-lab/`.
 
 ## Scenarios
 
 1. Initialization
-2. Config validation
-3. HMAC signing
-4. Error sanitization
-5. PII detection
-6. Circuit breaker state
-7. Health check
-8. Cleanup
+2. Single-send contract shaping
+3. Bulk-send contract shaping
+4. Validation rejection for invalid single input
+5. Validation rejection for invalid bulk input
+6. SDK health path behavior
+7. Cleanup
+
+## Notes
+
+- The lab goes through the real `HuefyEmailClient`.
+- It checks serialized request bodies, parsed responses, and validation-before-transport behavior.
