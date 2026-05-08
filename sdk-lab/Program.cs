@@ -28,6 +28,24 @@ void Fail(string label, string reason)
 Console.WriteLine("=== Huefy .NET SDK Lab ===");
 Console.WriteLine();
 
+if (IsLiveMode())
+{
+    await RunLiveLabAsync();
+
+    Console.WriteLine();
+    Console.WriteLine("========================================");
+    Console.WriteLine($"Results: {passed} passed, {failed} failed");
+    Console.WriteLine("========================================");
+
+    if (failed == 0)
+    {
+        Console.WriteLine();
+        Console.WriteLine("All verifications passed!");
+    }
+
+    return failed > 0 ? 1 : 0;
+}
+
 using var stub = new StubMessageHandler();
 
 HuefyEmailClient? client = null;
@@ -282,6 +300,200 @@ if (failed == 0)
 }
 
 return failed > 0 ? 1 : 0;
+
+bool IsLiveMode()
+{
+    return string.Equals(
+        Environment.GetEnvironmentVariable("HUEFY_SDK_LAB_MODE"),
+        "live",
+        StringComparison.OrdinalIgnoreCase);
+}
+
+string RequireEnv(string name)
+{
+    var value = Environment.GetEnvironmentVariable(name);
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        throw new InvalidOperationException($"{name} is required in live mode");
+    }
+
+    return value.Trim();
+}
+
+EmailProvider? ResolveProvider()
+{
+    var provider = Environment.GetEnvironmentVariable("HUEFY_SDK_LIVE_PROVIDER");
+    return provider?.Trim().ToLowerInvariant() switch
+    {
+        "sendgrid" => EmailProvider.Sendgrid,
+        "ses" => EmailProvider.Ses,
+        "mailgun" => EmailProvider.Mailgun,
+        _ => null,
+    };
+}
+
+async Task RunLiveLabAsync()
+{
+    HuefyEmailClient? liveClient = null;
+    try
+    {
+        liveClient = new HuefyEmailClient(new HuefyConfig
+        {
+            ApiKey = RequireEnv("HUEFY_SDK_LIVE_API_KEY"),
+            BaseUrl = RequireEnv("HUEFY_SDK_LIVE_BASE_URL"),
+            Timeout = 10_000,
+        });
+        Pass("Initialization");
+    }
+    catch (Exception ex)
+    {
+        Fail("Initialization", ex.Message);
+    }
+
+    if (liveClient is null)
+    {
+        return;
+    }
+
+    var recipient = RequireEnv("HUEFY_SDK_LIVE_RECIPIENT");
+    var templateKey = RequireEnv("HUEFY_SDK_LIVE_TEMPLATE_KEY");
+    var provider = ResolveProvider();
+
+    try
+    {
+        var request = provider is null
+            ? new SendEmailRequest
+            {
+                TemplateKey = templateKey,
+                Data = new Dictionary<string, object?> { ["FirstName"] = "SDK Live" },
+                Recipient = recipient,
+            }
+            : new SendEmailRequest
+            {
+                TemplateKey = templateKey,
+                Data = new Dictionary<string, object?> { ["FirstName"] = "SDK Live" },
+                Recipient = recipient,
+                ProviderType = provider.Value,
+            };
+
+        var response = await liveClient.SendEmailAsync(request);
+        if (!response.Success || response.Data.Recipients.Count == 0)
+        {
+            Fail("Single-send live behavior", "expected successful live send");
+        }
+        else
+        {
+            Pass("Single-send live behavior");
+        }
+    }
+    catch (Exception ex)
+    {
+        Fail("Single-send live behavior", ex.Message);
+    }
+
+    try
+    {
+        var request = provider is null
+            ? new SendBulkEmailsRequest
+            {
+                TemplateKey = templateKey,
+                Recipients =
+                [
+                    new BulkRecipient { Email = recipient, Type = "to" },
+                ],
+            }
+            : new SendBulkEmailsRequest
+            {
+                TemplateKey = templateKey,
+                Recipients =
+                [
+                    new BulkRecipient { Email = recipient, Type = "to" },
+                ],
+                Provider = provider.Value,
+            };
+
+        var response = await liveClient.SendBulkEmailsAsync(request);
+        if (!response.Success || response.Data.TotalRecipients < 1)
+        {
+            Fail("Bulk-send live behavior", "expected successful live bulk send");
+        }
+        else
+        {
+            Pass("Bulk-send live behavior");
+        }
+    }
+    catch (Exception ex)
+    {
+        Fail("Bulk-send live behavior", ex.Message);
+    }
+
+    try
+    {
+        await liveClient.SendEmailAsync(new SendEmailRequest
+        {
+            TemplateKey = templateKey,
+            Data = new Dictionary<string, object?> { ["FirstName"] = "SDK Live" },
+            Recipient = "not-an-email",
+        });
+        Fail("Validation rejection for invalid single input", "expected validation error");
+    }
+    catch (HuefyException)
+    {
+        Pass("Validation rejection for invalid single input");
+    }
+    catch (Exception ex)
+    {
+        Fail("Validation rejection for invalid single input", ex.Message);
+    }
+
+    try
+    {
+        await liveClient.SendBulkEmailsAsync(new SendBulkEmailsRequest
+        {
+            TemplateKey = templateKey,
+            Recipients =
+            [
+                new BulkRecipient { Email = "bad-email", Type = "reply-to" },
+            ],
+        });
+        Fail("Validation rejection for invalid bulk input", "expected validation error");
+    }
+    catch (HuefyException)
+    {
+        Pass("Validation rejection for invalid bulk input");
+    }
+    catch (Exception ex)
+    {
+        Fail("Validation rejection for invalid bulk input", ex.Message);
+    }
+
+    try
+    {
+        var health = await liveClient.HealthCheckAsync();
+        if (health.Data.Status != "healthy")
+        {
+            Fail("SDK health path behavior", $"expected healthy status, got {health.Data.Status}");
+        }
+        else
+        {
+            Pass("SDK health path behavior");
+        }
+    }
+    catch (Exception ex)
+    {
+        Fail("SDK health path behavior", ex.Message);
+    }
+
+    try
+    {
+        liveClient.Dispose();
+        Pass("Cleanup");
+    }
+    catch (Exception ex)
+    {
+        Fail("Cleanup", ex.Message);
+    }
+}
 
 sealed class CapturedRequest
 {

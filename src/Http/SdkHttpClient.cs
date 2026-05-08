@@ -33,7 +33,7 @@ internal sealed class SdkHttpClient : IDisposable
             config.HttpMessageHandler ?? new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) }
         )
         {
-            BaseAddress = new Uri(config.BaseUrl),
+            BaseAddress = new Uri(EnsureTrailingSlash(config.BaseUrl)),
             Timeout = TimeSpan.FromMilliseconds(config.Timeout),
         };
         _httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd(SdkVersion.UserAgent);
@@ -150,7 +150,7 @@ internal sealed class SdkHttpClient : IDisposable
             currentKey = _activeApiKey;
         }
 
-        var request = new HttpRequestMessage(method, path);
+        var request = new HttpRequestMessage(method, NormalizeRelativePath(path));
         request.Headers.Add("X-API-Key", currentKey);
 
         string bodyJson = string.Empty;
@@ -200,6 +200,12 @@ internal sealed class SdkHttpClient : IDisposable
 
     private string MaybeSanitize(string input) =>
         _enableSanitization ? ErrorSanitizer.Sanitize(input) : input;
+
+    private static string EnsureTrailingSlash(string baseUrl) =>
+        baseUrl.EndsWith("/", StringComparison.Ordinal) ? baseUrl : $"{baseUrl}/";
+
+    private static string NormalizeRelativePath(string path) =>
+        path.TrimStart('/');
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
