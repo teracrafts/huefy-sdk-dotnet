@@ -1,4 +1,5 @@
 using Teracrafts.Huefy.Utils;
+using System.Net.Http;
 
 namespace Teracrafts.Huefy.Sdk;
 
@@ -71,6 +72,11 @@ public record HuefyConfig
 
     /// <summary>Logger instance for SDK diagnostic output. Defaults to null (no logging).</summary>
     public IHuefyLogger? Logger { get; init; }
+
+    /// <summary>
+    /// Optional HTTP message handler override for deterministic harnesses such as the SDK lab.
+    /// </summary>
+    public HttpMessageHandler? HttpMessageHandler { get; init; }
 
     /// <summary>Optional callback invoked with rate-limit info after every successful response.</summary>
     public Action<RateLimitInfo>? OnRateLimitUpdate { get; init; }

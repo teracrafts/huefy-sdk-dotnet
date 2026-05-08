@@ -30,7 +30,7 @@ internal sealed class SdkHttpClient : IDisposable
         _enableSigning = config.EnableRequestSigning;
         _enableSanitization = config.EnableErrorSanitization;
         _httpClient = new HttpClient(
-            new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) }
+            config.HttpMessageHandler ?? new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) }
         )
         {
             BaseAddress = new Uri(config.BaseUrl),

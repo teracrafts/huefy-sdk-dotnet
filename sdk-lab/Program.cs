@@ -1,5 +1,5 @@
 using System.Net;
-using System.Net.Sockets;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using Teracrafts.Huefy.Sdk;
@@ -28,7 +28,7 @@ void Fail(string label, string reason)
 Console.WriteLine("=== Huefy .NET SDK Lab ===");
 Console.WriteLine();
 
-await using var stub = new StubServer();
+using var stub = new StubMessageHandler();
 
 HuefyEmailClient? client = null;
 
@@ -37,8 +37,9 @@ try
     client = new HuefyEmailClient(new HuefyConfig
     {
         ApiKey = "sdk_lab_test_key",
-        BaseUrl = stub.BaseUrl,
+        BaseUrl = "https://sdk-lab.invalid",
         Timeout = 2_000,
+        HttpMessageHandler = stub,
     });
     Pass("Initialization");
 }
@@ -290,25 +291,10 @@ sealed class CapturedRequest
     public JsonDocument? Body { get; init; }
 }
 
-sealed class StubServer : IAsyncDisposable
+sealed class StubMessageHandler : HttpMessageHandler
 {
-    private readonly HttpListener _listener;
-    private readonly CancellationTokenSource _cts = new();
-    private readonly Task _loop;
     private readonly List<CapturedRequest> _requests = [];
     private readonly object _lock = new();
-
-    public StubServer()
-    {
-        var port = GetFreePort();
-        BaseUrl = $"http://127.0.0.1:{port}";
-        _listener = new HttpListener();
-        _listener.Prefixes.Add($"{BaseUrl}/");
-        _listener.Start();
-        _loop = Task.Run(() => RunAsync(_cts.Token));
-    }
-
-    public string BaseUrl { get; }
 
     public int RequestCount
     {
@@ -329,33 +315,14 @@ sealed class StubServer : IAsyncDisposable
         }
     }
 
-    private async Task RunAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                var context = await _listener.GetContextAsync().WaitAsync(cancellationToken);
-                _ = Task.Run(() => HandleAsync(context), cancellationToken);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-        }
-        catch (HttpListenerException)
-        {
-        }
-        catch (ObjectDisposedException)
-        {
-        }
-    }
-
-    private async Task HandleAsync(HttpListenerContext context)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
     {
         string bodyText = string.Empty;
-        using (var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding))
+        if (request.Content is not null)
         {
-            bodyText = await reader.ReadToEndAsync();
+            bodyText = await request.Content.ReadAsStringAsync(cancellationToken);
         }
 
         JsonDocument? body = null;
@@ -368,14 +335,17 @@ sealed class StubServer : IAsyncDisposable
         {
             _requests.Add(new CapturedRequest
             {
-                Method = context.Request.HttpMethod,
-                Path = context.Request.Url?.AbsolutePath ?? string.Empty,
-                ApiKey = context.Request.Headers["X-API-Key"],
+                Method = request.Method.Method,
+                Path = request.RequestUri?.AbsolutePath ?? string.Empty,
+                ApiKey = request.Headers.TryGetValues("X-API-Key", out var apiKeys)
+                    ? apiKeys.FirstOrDefault()
+                    : null,
                 Body = body,
             });
         }
 
-        var responseJson = context.Request.Url?.AbsolutePath switch
+        var path = request.RequestUri?.AbsolutePath ?? string.Empty;
+        var responseJson = path switch
         {
             "/emails/send" => """
                 {
@@ -428,49 +398,30 @@ sealed class StubServer : IAsyncDisposable
             _ => """{ "message": "not found" }""",
         };
 
-        var statusCode = context.Request.Url?.AbsolutePath switch
+        var statusCode = path switch
         {
             "/emails/send" or "/emails/send-bulk" or "/health" => HttpStatusCode.OK,
             _ => HttpStatusCode.NotFound,
         };
 
-        var buffer = Encoding.UTF8.GetBytes(responseJson);
-        context.Response.StatusCode = (int)statusCode;
-        context.Response.ContentType = "application/json";
-        context.Response.ContentLength64 = buffer.Length;
-        await context.Response.OutputStream.WriteAsync(buffer);
-        context.Response.Close();
+        return new HttpResponseMessage(statusCode)
+        {
+            Content = new StringContent(responseJson, Encoding.UTF8, "application/json"),
+        };
     }
 
-    public async ValueTask DisposeAsync()
+    protected override void Dispose(bool disposing)
     {
-        _cts.Cancel();
-        _listener.Stop();
-        _listener.Close();
-
-        try
+        if (disposing)
         {
-            await _loop;
-        }
-        catch
-        {
-        }
-
-        lock (_lock)
-        {
-            foreach (var request in _requests)
+            lock (_lock)
             {
-                request.Body?.Dispose();
+                foreach (var request in _requests)
+                {
+                    request.Body?.Dispose();
+                }
             }
         }
-
-        _cts.Dispose();
-    }
-
-    private static int GetFreePort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        return ((IPEndPoint)listener.LocalEndpoint).Port;
+        base.Dispose(disposing);
     }
 }
